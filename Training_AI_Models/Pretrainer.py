@@ -1,9 +1,8 @@
-import torch
+import torchimport torch
 from torch import nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModel
 import time
-from pathlib import Path
 from pandas import DataFrame
 from random import shuffle
 
@@ -13,7 +12,9 @@ BATCH_SIZE = 32
 MAX_LENGTH = 128
 OUTPUT = 1
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-EPOCHS = 25
+CLASSIFIER_LAYER_DICT_DIR = "Depression_detecting_models/Pretrained_model_state_dict.pth"
+CLASSIFIER_LAYER_DIR = "Depression_detecting_models/Pretrained_model.pth"
+EPOCHS = 1
 
 # Below are several different number of datasets that will be used for training.
 DATASET_1 = "thePixel42/depression-detection"
@@ -233,18 +234,28 @@ def calculate_accuracy(y_logits, y):
 def save_model(model):
     # function the automatically saves the model
 
-    model = model.to(DEVICE)
+    model = model.to("cpu")
 
     print("Saving model...")
-    model_path = Path("Depression_detecting_models")
-    model_path.mkdir(parents=True, exist_ok=True)
-    model_name = "Model_002_pretraind.pth"
-    model_save_path = model_path/model_name
-    torch.save(model, model_save_path)
-    model_state_dict_name = "Model_002_pretrained_state_dict.pth"
-    dict_path = model_path/model_state_dict_name
-    torch.save(model.state_dict, dict_path)
-    print("Model has been saved!")
+    try:
+        torch.save(model.classifier, CLASSIFIER_LAYER_DIR)
+        torch.save(model.classifier.state_dict, CLASSIFIER_LAYER_DICT_DIR)
+        print("Model has been saved!")
+    except Exception:
+        print("We were unable to save the model.")
+
+
+def load_model(model):
+
+    print("Getting the saved model to train.")
+    try:
+        model.classifier.load_state_dict(torch.load(CLASSIFIER_LAYER_DICT_DIR))
+        print("The model has been loaded")
+    except Exception:
+        print("We were unable to load the model. Now training a base model instead.")
+    
+    return model
+
 
 
 def train(dataloader, model, loss_fn, optimizer):
@@ -299,6 +310,7 @@ def test(dataloader, model, loss_fn):
 
 
 def main():
+    
     dataset_manager = DatasetManager(TOKENIZER)
     dataset_manager.load_huggingface_data(DATASET_1, DATASET_1_TEST)
     dataset_manager.load_huggingface_data(DATASET_2, DATASET_2_TEST)
@@ -306,8 +318,10 @@ def main():
     dataset_manager.load_huggingface_data(DATASET_4, DATASET_4_TEST)
 
     train_dataloader, test_dataloader = dataset_manager.prepare_all_loaded_data()
+    
 
     model = ClassifierModel(OUTPUT, AutoModel.from_pretrained(PRETRAINED_MODEL))
+    model = load_model(model)
     model = model.to(DEVICE)
 
     for param in model.pretrained_model.parameters():
@@ -319,7 +333,7 @@ def main():
     results = {"Epoch": [], "Train loss": [], "Train accuracy": [], "Train time": [], "Test loss": [],
                "Test Accuracy": [], "Test time": []}
     print("Starting training process...")
-
+    
     for epoch in range(EPOCHS):
         train_loss, train_accuracy, train_time = train(train_dataloader, model, loss_fn, optimizer)
         test_loss, test_accuracy, test_time = test(test_dataloader, model, loss_fn)
@@ -334,6 +348,7 @@ def main():
         results["Test Accuracy"].append(round(test_accuracy, 3))
         results["Test time"].append(round(test_time, 2))
     create_and_display_dataframe(results)
+    
     save_model(model)
 
 
