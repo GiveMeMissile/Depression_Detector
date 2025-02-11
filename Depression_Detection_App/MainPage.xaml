@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Depression_Detection_App.MainPage">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="30,0"
+            Spacing="25">
+            <Label
+                Text="DEPRESSION DETECTOR!!!"
+                Style="{StaticResource Headline}"
+                SemanticProperties.HeadingLevel="Level1" />
+            <Image
+                x:Name ="TheFunny"
+                Source="the_funny.png"
+                HeightRequest="185"
+                Aspect="AspectFit"
+                SemanticProperties.Description="The most Depressed thing to ever Depress." />
+
+            <Label
+                Text="Welcome to the Depression Detector. Where we shall detect depression in text. YIPPEE!!!"
+                Style="{StaticResource SubHeadline}"
+                SemanticProperties.HeadingLevel="Level2"
+                SemanticProperties.Description="Welcome to the Depression Detector" />
+
+            <Button
+                x:Name="DetectDepression"
+                Text="Click here to enter your text below to the Depression Detector!" 
+                SemanticProperties.Hint="Counts the number of times you click"
+                Clicked="InputDepression"
+                HorizontalOptions="Fill" />
+            <Editor 
+                x:Name="DepressedTextHarvester"
+                Placeholder="Enter the text you want to detect the depression value of"
+                HeightRequest="200"
+                HorizontalOptions="Fill"/>
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
