@@ -7,6 +7,7 @@ import math
 TOKENIZER = AutoTokenizer.from_pretrained("bert-base-uncased")
 MODEL_1 = "Depression_detecting_models/Model_001.pth"
 MODEL_1_STATE_DICT = "Depression_detecting_models/Model_001_state_dict.pth"
+BERT_STATE_DICT = "Depression_detecting_models/Pretrained_model_state_dict.pth"
 PRETRAINED_MODEL = "bert-base-uncased"
 MAX_LENGTH = 128
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -17,10 +18,16 @@ OUTPUT_FEATURES = 1
 
 
 class ClassifierModel(nn.Module):
-    def __init__(self, classes, pretrained_model):
+    def __init__(self, classes, pretrained_model, hidden_features=512):
         super(ClassifierModel, self).__init__()
         self.pretrained_model = pretrained_model
-        self.classifier = nn.Linear(self.pretrained_model.config.hidden_size, classes)
+        self.classifier = nn.Sequential(
+            nn.Linear(self.pretrained_model.config.hidden_size, hidden_features),
+            nn.ReLU(),
+            nn.Linear(hidden_features, hidden_features),
+            nn.ReLU(),
+            nn.Linear(hidden_features, classes)
+        )
 
     def forward(self, x, padding_attention_mask=None):
         x = self.pretrained_model(input_ids=x, attention_mask=padding_attention_mask)
@@ -114,12 +121,15 @@ class DepressionDetector:
             model_1 = transformer
             state_dict = torch.load(MODEL_1_STATE_DICT, weights_only=False)
             model_1.load_state_dict(state_dict)
+        bert_state_dict = torch.load(BERT_STATE_DICT, weights_only=False)
+        bert.classifier.load_state_dict(bert_state_dict)
 
-        self.model_dict = {"model_1": model_1.to(DEVICE)}
+        self.model_dict = {"model_1": model_1.to(DEVICE), "model_2": bert.to(DEVICE)}
 
     def forward(self, model, text):
         tokens = self.tokenizer(text, return_tensors="pt")
         tokens = self.split_and_pad_text(tokens["input_ids"].squeeze(dim=0))
+        tokens = tokens.type(torch.long)
         with torch.inference_mode():
             attention_mask = self.create_attention_mask(tokens)
             tokens = tokens.to(DEVICE)
@@ -158,7 +168,4 @@ class DepressionDetector:
         prob = torch.sigmoid(logits)
         prob = prob.sum(dim=0)/logits.size(0)
         return prob.item()
-    
-x = DepressionDetector()
-print(x.forward("model_1", "XCGUHIJOHGFDSAZEXFCGVbgtXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdXCGUHIJOHGFDSAZEXFCGVbgtRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&FtdRDRSXFGCHVBUhiyt7r6dtrXCGVUHIytfdtrxfcGVHUHIYT&Ftd"))
     
