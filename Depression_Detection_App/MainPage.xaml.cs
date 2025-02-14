@@ -14,7 +14,7 @@ public class AIManager
 
 	public AIManager()
 	{
-        Runtime.PythonDLL = @"C:\Users\dylan\anaconda3\python312.dll";
+        Runtime.PythonDLL = @"python312.dll"; // Replace this with the path to your python dll file.
         PythonEngine.Initialize();
         using (Py.GIL())
         {
