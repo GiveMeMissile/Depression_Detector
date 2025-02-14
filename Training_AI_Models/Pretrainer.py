@@ -14,7 +14,7 @@ OUTPUT = 1
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 CLASSIFIER_LAYER_DICT_DIR = "Depression_detecting_models/Pretrained_model_state_dict.pth"
 CLASSIFIER_LAYER_DIR = "Depression_detecting_models/Pretrained_model.pth"
-EPOCHS = 1
+EPOCHS = 50
 
 # Below are several different number of datasets that will be used for training.
 DATASET_1 = "thePixel42/depression-detection"
@@ -203,10 +203,17 @@ class DatasetManager:
     
 
 class ClassifierModel(nn.Module):
-    def __init__(self, classes, pretrained_model):
+    def __init__(self, classes, pretrained_model, hidden_features=512):
         super(ClassifierModel, self).__init__()
         self.pretrained_model = pretrained_model
-        self.classifier = nn.Linear(self.pretrained_model.config.hidden_size, classes)
+        self.classifier = nn.Sequential(
+            nn.Linear(self.pretrained_model.config.hidden_size, hidden_features),
+            nn.ReLU(),
+            nn.Linear(hidden_features, hidden_features),
+            nn.ReLU(),
+            nn.Linear(hidden_features, classes)
+        )
+
 
     def forward(self, x, attention_mask):
         x = self.pretrained_model(input_ids=x, attention_mask=attention_mask)
@@ -239,7 +246,7 @@ def save_model(model):
     print("Saving model...")
     try:
         torch.save(model.classifier, CLASSIFIER_LAYER_DIR)
-        torch.save(model.classifier.state_dict, CLASSIFIER_LAYER_DICT_DIR)
+        torch.save(model.classifier.state_dict(), CLASSIFIER_LAYER_DICT_DIR)
         print("Model has been saved!")
     except Exception:
         print("We were unable to save the model.")
@@ -251,7 +258,7 @@ def load_model(model):
     try:
         model.classifier.load_state_dict(torch.load(CLASSIFIER_LAYER_DICT_DIR))
         print("The model has been loaded")
-    except Exception:
+    except Exception as e:
         print("We were unable to load the model. Now training a base model instead.")
     
     return model
@@ -328,7 +335,7 @@ def main():
         param.requires_grad = False
 
     loss_fn = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
 
     results = {"Epoch": [], "Train loss": [], "Train accuracy": [], "Train time": [], "Test loss": [],
                "Test Accuracy": [], "Test time": []}
@@ -350,6 +357,11 @@ def main():
     create_and_display_dataframe(results)
     
     save_model(model)
+
+
+if __name__ == "__main__":
+    main()
+
 
 
 if __name__ == "__main__":
