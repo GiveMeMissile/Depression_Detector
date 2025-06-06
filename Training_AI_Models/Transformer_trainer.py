@@ -250,7 +250,7 @@ class TransformerModel(nn.Module):
         encoder = nn.TransformerEncoderLayer(
             d_model=hidden_features,
             nhead=num_heads,
-            dim_feedforward=HIDDEN_FEATURES,
+            dim_feedforward=hidden_features,
             dropout=dropout,
             batch_first=True
         )
